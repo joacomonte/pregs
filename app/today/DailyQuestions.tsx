@@ -16,6 +16,8 @@ export default function DailyQuestions() {
   const [futuroTimer, setFuturoTimer] = useState<any>(null);
   const [lastFeliz, setLastFeliz] = useState<string | null>(null);
   const [lastFuturo, setLastFuturo] = useState<string | null>(null);
+  const [felizCargando, setFelizCargando] = useState(false);
+  const [futuroCargando, setFuturoCargando] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -68,6 +70,21 @@ export default function DailyQuestions() {
         <div>
           <div className={styles.label}>
             {lastFeliz ? `La última vez te hizo feliz ${lastFeliz}. ¿Qué te hizo feliz hoy?` : "¿Qué me hizo sentir bien hoy?"}
+            {lastFeliz && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (felizTimer) clearTimeout(felizTimer);
+                  setFeliz(lastFeliz);
+                  setFelizSugerencia(null);
+                }}
+                className={styles.pillButton} 
+                style={{ padding: "2px 8px", marginLeft: 8 }}
+                aria-label="Usar la última respuesta"
+              >
+                Lo mismo
+              </button>
+            )}
           </div>
           <div className={styles.inputGroup}>
             <input 
@@ -82,8 +99,12 @@ export default function DailyQuestions() {
                 if (felizTimer) clearTimeout(felizTimer);
                 const t = setTimeout(async () => {
                   const q = v.trim();
-                  if (q.length < 3) return;
+                  if (q.length < 3) {
+                    setFelizCargando(false);
+                    return;
+                  }
                   try {
+                    setFelizCargando(true);
                     const res = await fetch('/api/answers/similar', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -93,18 +114,28 @@ export default function DailyQuestions() {
                     const data = await res.json();
                     setFelizSugerencia(data?.match || null);
                   } catch {}
-                }, 600);
+                  finally {
+                    setFelizCargando(false);
+                  }
+                }, 500);
                 setFelizTimer(t);
               }} />
           </div>
+          {felizCargando && (
+            <div className={styles.hint} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+              <span className={styles.miniSpinner} aria-hidden="true" />
+              <span>buscando similitudes</span>
+            </div>
+          )}
           {felizSugerencia && (
             <button
               type="button"
-              className="text-start text-sm text-green-300 font-bold cursor-pointer pt-2"
+              className={styles.pillButton}
+
               onClick={() => setFeliz(felizSugerencia)}
-              style={{ marginTop: 6 }}
+              style={{ textAlign: "start", marginTop: 6 }}
             >
-              Una vez te hizo feliz: “{felizSugerencia}”. Si es muy similar click acá.
+              Una vez te hizo feliz: “{felizSugerencia}”. <br /> Si es muy similar click acá.
             </button>
           )}
         </div>
@@ -112,6 +143,21 @@ export default function DailyQuestions() {
         <div>
           <div className={styles.label}>
             {lastFuturo ? `La ultima vez no pudiste ${lastFuturo}. ¿Que te hubiera gustado hacer hoy para mejorar tu futuro?` : "¿Qué me hubiera gustado haber hecho que mejore mi futuro?"}
+            {lastFuturo && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (futuroTimer) clearTimeout(futuroTimer);
+                  setFuturo(lastFuturo);
+                  setFuturoSugerencia(null);
+                }}
+                className={styles.pillButton} 
+                style={{ padding: "2px 8px", marginLeft: 8 }}
+                aria-label="Usar la última respuesta"
+              >
+                Lo mismo
+              </button>
+            )}
           </div>
           <div className={styles.inputGroup}>
             <input 
@@ -126,8 +172,12 @@ export default function DailyQuestions() {
                 if (futuroTimer) clearTimeout(futuroTimer);
                 const t = setTimeout(async () => {
                   const q = v.trim();
-                  if (q.length < 3) return;
+                  if (q.length < 3) {
+                    setFuturoCargando(false);
+                    return;
+                  }
                   try {
+                    setFuturoCargando(true);
                     const res = await fetch('/api/answers/similar', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -137,10 +187,19 @@ export default function DailyQuestions() {
                     const data = await res.json();
                     setFuturoSugerencia(data?.match || null);
                   } catch {}
+                  finally {
+                    setFuturoCargando(false);
+                  }
                 }, 600);
                 setFuturoTimer(t);
               }} />
           </div>
+          {futuroCargando && (
+            <div className={styles.hint} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+              <span className={styles.miniSpinner} aria-hidden="true" />
+              <span>buscando similitudes</span>
+            </div>
+          )}
           {futuroSugerencia && (
             <button
               type="button"
