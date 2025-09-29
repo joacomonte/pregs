@@ -1,7 +1,9 @@
 .main {
-  min-height: 100svh;
-  display: grid;
-  place-items: center;
+  margin-top: 10%;
+  min-height: 70svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   padding: 24px;
 }
 

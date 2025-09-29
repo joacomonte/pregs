@@ -1,3 +1,78 @@
 .wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
   margin-top: 16px;
+  width: 100%;
+}
+
+
+.q:first-child {
+  margin-top: 0;
+}
+
+.label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.inputGroup {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.control {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 16px;
+  background: var(--surface);
+  color: var(--foreground);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pillButton {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  padding: 0 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.hint {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.button {
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  width: 100%
 }

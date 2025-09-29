@@ -29,7 +29,6 @@ export default async function Home() {
     <main className={styles.main}>
       <div className="flex flex-col gap-4">
         <h1 className={styles.greeting}>¡Qué bueno verte por acá, {displayApodo}! 👋</h1>
-        <p className={styles.sub}>[frase inspiradora].</p>
       </div>
       <DailyQuestions />
     </main>
