@@ -19,7 +19,7 @@ export default function AllAnswersClient() {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [felizSummary, setFelizSummary] = useState<string>('');
-  const [futuroSummary, setFuturoSummary] = useState<string>('');
+
 
   useEffect(() => {
     function onDocClick(ev: MouseEvent) {
@@ -79,7 +79,8 @@ export default function AllAnswersClient() {
     (async () => {
       try {
         if (felices.length === 0) {
-          setFelizSummary('Resumen: aún no hay cosas felices registradas.');
+          // keep blank when no items
+          setFelizSummary('');
           return;
         }
         const res = await fetch('/api/ai-summary', {
@@ -94,39 +95,11 @@ export default function AllAnswersClient() {
         const data = await res.json();
         setFelizSummary(data.summary || '');
       } catch {
-        // fallback simple summary
-        const total = felices.reduce((acc, g) => acc + g.count, 0);
-        const top = felices[0];
-        setFelizSummary(`Resumen: ${total} menciones en total. Lo más repetido: “${top.content}” (${top.count}).`);
+        // keep blank on errors
+        setFelizSummary('');
       }
     })();
   }, [felices]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        if (futuro.length === 0) {
-          setFuturoSummary('Conclusión: sin planes aún, ¡agrega uno!');
-          return;
-        }
-        const res = await fetch('/api/ai-summary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: 'Cosas que dijiste que querías hacer',
-            items: futuro.slice(0, 50).map(g => ({ content: g.content, count: g.count })),
-          }),
-        });
-        if (!res.ok) throw new Error('No se pudo resumir');
-        const data = await res.json();
-        setFuturoSummary(data.summary || '');
-      } catch {
-        const total = futuro.reduce((acc, g) => acc + g.count, 0);
-        const top = futuro[0];
-        setFuturoSummary(`Conclusión: ${total} intenciones en total. Lo más repetido: “${top.content}” (${top.count}).`);
-      }
-    })();
-  }, [futuro]);
 
   function startEditGroup(content: string, slug: string) {
     setMenuOpenId(null);
@@ -192,7 +165,6 @@ export default function AllAnswersClient() {
           ))}
           {futuro.length === 0 && <li style={{ opacity: 0.6, fontSize: 13 }}>Sin elementos todavía</li>}
         </ul>
-        <div className={styles.summary}>{futuroSummary}</div>
       </section>
     </div>
   );

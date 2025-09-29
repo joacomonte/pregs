@@ -46,7 +46,7 @@
   border: 1px solid var(--border);
   background: transparent;
   color: var(--foreground);
-  padding: 0 14px;
+  padding: 6px 14px;
   border-radius: 12px;
   font-weight: 600;
   font-size: 12px;
@@ -63,8 +63,17 @@
 
 .actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 12px;
+}
+
+.actions > button {
+  cursor: pointer;
+}
+
+.actions > button:hover {
+  opacity: 0.8;
 }
 
 .button {
@@ -75,4 +84,14 @@
   border-radius: 10px;
   font-weight: 600;
   width: 100%
+}
+
+.secondaryButton {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  width: 100%;
 }

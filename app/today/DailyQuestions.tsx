@@ -5,41 +5,45 @@ import styles from "./DailyQuestions.module.css";
 import AllAnswersClient from "./AllAnswersClient";
 
 export default function DailyQuestions() {
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<Array<{ question_id: number; slug: string; content: string; last_content: string | null; same_content_count: number }>>([]);
+  const [feliz, setFeliz] = useState("");
+  const [futuro, setFuturo] = useState("");
   const [saving, setSaving] = useState(false);
-  const [ok, setOk] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [felizSugerencia, setFelizSugerencia] = useState<string | null>(null);
+  const [felizTimer, setFelizTimer] = useState<any>(null);
+  const [futuroSugerencia, setFuturoSugerencia] = useState<string | null>(null);
+  const [futuroTimer, setFuturoTimer] = useState<any>(null);
+  const [lastFeliz, setLastFeliz] = useState<string | null>(null);
+  const [lastFuturo, setLastFuturo] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
       try {
-        const res = await fetch("/api/answers");
-        if (!res.ok) throw new Error("No autorizado");
-        const data = await res.json();
-        setRows((data as Array<any>).map((d) => ({ ...d, content: "" })));
-      } catch (e: any) {
-        setErr(e?.message || "Error cargando preguntas");
-      } finally {
-        setLoading(false);
-      }
+        const [lf, lfu] = await Promise.all([
+          fetch('/api/answers/latest?slug=hoy-bien').then(r => r.ok ? r.json() : { content: null }),
+          fetch('/api/answers/latest?slug=futuro-mejor').then(r => r.ok ? r.json() : { content: null }),
+        ]);
+        setLastFeliz((lf?.content || '').trim() || null);
+        setLastFuturo((lfu?.content || '').trim() || null);
+      } catch {}
     })();
   }, []);
 
   async function guardar() {
     setSaving(true);
-    setOk(null);
     setErr(null);
     try {
+      const answers = [
+        { slug: "hoy-bien", content: feliz.trim() },
+        { slug: "futuro-mejor", content: futuro.trim() },
+      ].filter((a) => a.content.length > 0);
       const res = await fetch("/api/answers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: rows.map((r) => ({ question_id: r.question_id, content: r.content })) }),
+        body: JSON.stringify({ answers }),
       });
       if (!res.ok) throw new Error("No se pudo guardar");
-      setOk("Guardado");
       setSubmitted(true);
     } catch (e: any) {
       setErr(e?.message || "Error guardando");
@@ -48,7 +52,6 @@ export default function DailyQuestions() {
     }
   }
 
-  if (loading) return <div className={styles.wrapper}>Cargando…</div>;
   if (err) return <div className={styles.wrapper}>{err}</div>;
 
   if (submitted) {
@@ -62,57 +65,109 @@ export default function DailyQuestions() {
   return (
     <>
       <div className={styles.wrapper}>
-        {rows.map((r, i) => (
-          <div key={r.question_id} className={styles.q}>
-            <div className={styles.label}>
-              {(() => {
-                const last = r.last_content || null;
-                if (r.slug === "hoy-bien") {
-                  return last ? `La última vez te hizo feliz ${last}. ¿Qué te hizo feliz hoy?` : "¿Qué me hizo sentir bien hoy?";
-                }
-                if (r.slug === "futuro-mejor") {
-                  return last ? `La ultima vez no pudiste ${last}. ¿Que te hubiera gustado hacer hoy para mejorar tu futuro?` : "¿Qué me hubiera gustado haber hecho que mejore mi futuro?";
-                }
-                return "";
-              })()}
-            </div>
-            <div className={styles.inputGroup}>
-              <input
-                autoComplete="off"
-                className={`${styles.input} ${styles.control}`}
-                placeholder={i === 0 ? "Ej: juntarme con amigos" : "Ej: ir a entrenar o estudiar por 30 min"}
-                value={r.content}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setRows((prev) => prev.map((p) => (p.question_id === r.question_id ? { ...p, content: v } : p)));
-                }}
-              />
-              {r.last_content && (
-                <button
-                  type="button"
-                  className={`${styles.pillButton} ${styles.control}`}
-                  onClick={() => {
-                    const prevAns = r.last_content as string;
-                    setRows((prev) => prev.map((p) => (p.question_id === r.question_id ? { ...p, content: prevAns } : p)));
-                  }}
-                >
-                  Lo mismo
-                </button>
-              )}
-            </div>
+        <div>
+          <div className={styles.label}>
+            {lastFeliz ? `La última vez te hizo feliz ${lastFeliz}. ¿Qué te hizo feliz hoy?` : "¿Qué me hizo sentir bien hoy?"}
           </div>
-        ))}
-        {ok && <div className={styles.hint}>{ok}</div>}
-        {err && (
-          <div className={styles.hint} style={{ color: "crimson" }}>
-            {err}
+          <div className={styles.inputGroup}>
+            <input 
+              autoComplete="off" 
+              className={`${styles.input} ${styles.control}`} 
+              placeholder="Ej: juntarme con amigos" 
+              value={feliz} 
+              onChange={(e) => {
+                const v = e.target.value;
+                setFeliz(v);
+                setFelizSugerencia(null);
+                if (felizTimer) clearTimeout(felizTimer);
+                const t = setTimeout(async () => {
+                  const q = v.trim();
+                  if (q.length < 3) return;
+                  try {
+                    const res = await fetch('/api/answers/similar', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ slug: 'hoy-bien', query: q })
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    setFelizSugerencia(data?.match || null);
+                  } catch {}
+                }, 600);
+                setFelizTimer(t);
+              }} />
           </div>
-        )}
-        <div className={styles.actions}>
-          <button onClick={guardar} disabled={saving} className={styles.button}>
-            {saving ? "Guardando…" : "Guardar"}
-          </button>
+          {felizSugerencia && (
+            <button
+              type="button"
+              className="text-start text-sm text-green-300 font-bold cursor-pointer pt-2"
+              onClick={() => setFeliz(felizSugerencia)}
+              style={{ marginTop: 6 }}
+            >
+              Una vez te hizo feliz: “{felizSugerencia}”. Si es muy similar click acá.
+            </button>
+          )}
         </div>
+
+        <div>
+          <div className={styles.label}>
+            {lastFuturo ? `La ultima vez no pudiste ${lastFuturo}. ¿Que te hubiera gustado hacer hoy para mejorar tu futuro?` : "¿Qué me hubiera gustado haber hecho que mejore mi futuro?"}
+          </div>
+          <div className={styles.inputGroup}>
+            <input 
+              autoComplete="off" 
+              className={`${styles.input} ${styles.control}`} 
+              placeholder="Ej: ir a entrenar o estudiar por 30 min" 
+              value={futuro} 
+              onChange={(e) => {
+                const v = e.target.value;
+                setFuturo(v);
+                setFuturoSugerencia(null);
+                if (futuroTimer) clearTimeout(futuroTimer);
+                const t = setTimeout(async () => {
+                  const q = v.trim();
+                  if (q.length < 3) return;
+                  try {
+                    const res = await fetch('/api/answers/similar', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ slug: 'futuro-mejor', query: q })
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    setFuturoSugerencia(data?.match || null);
+                  } catch {}
+                }, 600);
+                setFuturoTimer(t);
+              }} />
+          </div>
+          {futuroSugerencia && (
+            <button
+              type="button"
+              className="text-start text-sm text-green-300 font-bold cursor-pointer pt-2"
+              onClick={() => setFuturo(futuroSugerencia)}
+              style={{ marginTop: 6 }}
+            >
+              Una vez dijiste que querías: “{futuroSugerencia}”. Si es muy similar click acá.
+            </button>
+          )}
+        </div>
+      </div>
+      {err && (<div className={styles.hint} style={{ color: "crimson" }}>{err}</div>)}
+      <div className={styles.actions}>
+        <button 
+          onClick={guardar} 
+          disabled={saving} 
+          className={styles.button}>
+          {saving ? "Guardando…" : "Guardar"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSubmitted(true)}
+          className={styles.secondaryButton}
+        >
+          Ir al resumen
+        </button>
       </div>
     </>
   );

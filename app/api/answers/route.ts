@@ -43,17 +43,23 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const userId = (session.user as any).id;
   const body = await req.json();
-  const answers: Array<{ question_id: number; content: string }> = body?.answers ?? [];
+  const answers: Array<{ question_id?: number; slug?: string; content: string }> = body?.answers ?? [];
   if (!Array.isArray(answers)) return NextResponse.json({ error: 'Formato inválido' }, { status: 400 });
   for (const a of answers) {
-    // Always insert a new answer row to keep full history
+    const content = (a.content || '').trim();
+    if (content.length === 0) continue;
+    let qid = a.question_id;
+    if (!qid && a.slug) {
+      const found = await sql`select id from questions where slug = ${a.slug} limit 1`;
+      qid = found?.[0]?.id as number | undefined;
+    }
+    if (!qid) continue;
     await sql`
       insert into answers (user_id, question_id, content, answered_on)
-      values (${userId}, ${a.question_id}, ${a.content}, current_date)`;
-    // Increment the count for this exact content
+      values (${userId}, ${qid}, ${content}, current_date)`;
     await sql`
       insert into answer_counts (user_id, question_id, content, count, last_answered_on)
-      values (${userId}, ${a.question_id}, ${a.content}, 1, current_date)
+      values (${userId}, ${qid}, ${content}, 1, current_date)
       on conflict (user_id, question_id, content) do update set 
         count = answer_counts.count + 1,
         last_answered_on = excluded.last_answered_on`;
